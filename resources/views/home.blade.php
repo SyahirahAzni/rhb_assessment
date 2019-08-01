@@ -10,29 +10,16 @@
     <!-- font awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <!-- <script src="/vendor/twbs/pagination/jquery.twbsPagination.min.js"></script> -->
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/twbs-pagination/1.4.1/jquery.twbsPagination.min.js'></script>
 
     <title>Front-end Assessment</title>
   </head>
   <body>
     <div class="container">
-      <input class="form-control mt-4 mb-4" type="" name="search" id="search" placeholder="Search">
-      <h6 class="font-weight-bold" name="total" id="total">{items->total_count} repository results</h4>
-      <hr align="left" width="100%">
-
-      <div class="row m-0">
-        <div class="col-lg-8 p-0">
-          <h5 name="full_name" id="full_name" class="text-info font-weight-bold">$item->full_name</h5>
-          <p name="description" id="description">A declarative, efficient and flexible JavaScript library for building user interfaces.</p>
-          <p name="updated_date" id="updated_date">Updated on Tue,Jul 03 2018</p>
-        </div>
-        <div class="col-lg-4">
-          <div class="d-flex justify-content-between">
-            <label name="language" id="language"><i class="fa fa-circle mr-1"></i>JavaScript</label>
-            <label name="star" id="star"><i class="fa fa-star mr-1"></i>105262</label>
-          </div>
-        </div>
-        <hr align="" width="100%">
+      <input class="form-control mt-4 mb-4" type="search" name="search" onclick="clear()" id="search" placeholder="Search">
+      <h6 class="font-weight-bold" name="total" id="total"></h4>
+      <hr id="line" align="left" width="100%">
+      <div id=divitem class="row m-0">
       </div>
 
       <!-- pagination -->
@@ -69,81 +56,89 @@
   </body>
 
   <script type="text/javascript">
-    
 
-$(document).ready(function() {
+    $(document).ready(function() {
 
-  var message = $("#search").val();
-  var data = {'full_name' : message};
-  var $pagination = $('#pagination'),
-      totalRecords = 0,
-      records = [],
-      displayRecords = [],
-      recPerPage = 10,
-      page = 1,
-      totalPages = 0;
 
-  $('#search').keydown(function() {
-    if(event.keyCode == 13){
-      postRequest('https://api.github.com/search/repositories?per_page=${per_page}&q=',{full_name: message})
-        .then(data => console.log(data)) // Result from the `response.json()` call
-        .catch(error => console.error(error))
+    var $pagination = $('#pagination'),
+    totalRecords = 0,
+    records = [],
+    displayRecords = [],
+    recPerPage = 10,
+    page = 1,
+    totalPages = 0;
 
-      function postRequest(url, data) {
-        return fetch(url, {
-          credentials: 'same-origin', // 'include', default: 'omit'
-          method: 'post', // 'GET', 'PUT', 'DELETE', etc.
-          body: JSON.stringify(data), // Coordinate the body type with 'Content-Type'
-          headers: new Headers({
-            'Content-Type': 'application/json'
-          }),
-        })
-        .then(response => response.json())
-      }
-      // $.ajax({
-      //     url: "https://api.github.com/search/repositories?per_page=${per_page}&q=",
-      //     type: "post",
-      //     data: data,
-      //     body: JSON.stringify(data),
-      //     dataType: 'application/json',
-      //     success: function(){  
+      $('#search').on("search", function(event) {
+        $("#total").empty();
+        $("#divitem").empty();
+      });
 
-      //       alert("Sent");
-      //     },
-      //     error:function(){
-      //       alert("No result");                
-      //     }
-      //   });
-    }
-  });
+      $('#search').keydown(function() {
+        if(event.keyCode == 13){
 
-  function generate_table() {
-      var total = $("#total");
-  
-      for (var i = 0; i < displayRecords.length; i++) {
-            total.append(displayRecords[i].total_count);
-            $('body').append(total);
-            console.log(total);
-      }
+          let test = $('#search').val();
+          console.log(test);
+
+          fetch('https://api.github.com/search/repositories?per_page=${per_page}&q='+test+'')
+            .then(response => response.json())
+            .then(data => {
+              records = data.items;
+              console.log(records);
+              totalRecords = records.length;
+              totalPages = Math.ceil(totalRecords / recPerPage);
+              apply_pagination(data);
+              console.log(data);
+              var total = $("#total");
+              total.append(data.total_count + " repository results");
+
+            })
+            .catch(error => console.error(error))
+        }
+      });
+
+      function generate_table(data) {
+          
       
-  }
+          for (var i = 0; i < displayRecords.length; i++) {
 
-  // function apply_pagination() {
-  //       $pagination.twbsPagination({
-  //             totalPages: totalPages,
-  //             visiblePages: 6,
-  //             onPageClick: function (event, page) {
-  //                   displayRecordsIndex = Math.max(page - 1, 0) * recPerPage;
-  //                   endRec = (displayRecordsIndex) + recPerPage;
-                   
-  //                   displayRecords = records.slice(displayRecordsIndex, endRec);
-  //                   generate_table();
-  //             }
-  //       });
-  // }
+                $('#divitem').append(
+                    '<div class="col-lg-8 p-0">'+
+                      '<h5 name="full_name" id="full_name" class="text-info font-weight-bold">'+displayRecords[i].full_name+'</h5>'+
+                      '<p name="description" id="description">'+displayRecords[i].description+'</p>'+
+                      '<p name="updated_date" id="updated_date">Updated on Tue,'+displayRecords[i].updated_at+'</p>'+
+                    '</div>'+
+                    '<div class="col-lg-4">'+
+                      '<div class="d-flex justify-content-between">'+
+                        '<label name="language" id="language"><i class="fa fa-circle mr-1"></i>'+displayRecords[i].language+'</label>'+
+                        '<label name="star" id="star"><i class="fa fa-star mr-1"></i>'+displayRecords[i].stargazers_count+'</label>'+
+                      '</div>'+
+                    '</div>'+
+                    '<hr align="" width="100%">');
+          }
+      }
 
-});
+      function clear(){
 
+       
+        console.log( $('#search').val());
+      }
 
+      function apply_pagination(data) {
+        $pagination.twbsPagination({
+        totalPages: totalPages,
+        visiblePages: 6,
+        next: 'Next',
+        prev: 'Prev',
+        onPageClick: function (event, page) {
+                  displayRecordsIndex = Math.max(page - 1, 0) * recPerPage;
+                  endRec = (displayRecordsIndex) + recPerPage;
+                 
+                  displayRecords = records.slice(displayRecordsIndex, endRec);
+                  generate_table(data);
+            }
+         });
+      }
+
+    });
   </script>
 </html>
